@@ -28,3 +28,10 @@ Trigger an HTTP 200 response with a custom header:
 http://localhost:8124/200?headers.CustomHeader=foo
 
 There are a lot more options and things you can do, including sending parameters as a serialized JSON object, sending an array of responses, and using conditionals to choose the appropriate response.  I'll write up more soon, in the meantime, check the source.
+
+Background
+----------
+
+Testing client/server communications can be a pain.  You either need to embed logging in your code, or fire up WireShark to view the requests/responses.  And if you are debugging a server, the start server -> make request -> check logs -> stop server -> edit code cycle can be a real pain.  This server helps with these situations by echoing your request/response headers, and also giving you fine-grained control over the response.
+
+One example where this can be useful is testing a CORS preflight request (which is an HTTP OPTION request followed by another HTTP request).  Testing this on a regular server would be a pain, but echo-server's "json" parameter gives you fine-grain, almost script-like control over responses or a series of responses.
