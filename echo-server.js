@@ -88,6 +88,12 @@ function getOptions(request) {
     return status;
   };
 
+  // This is dangerous, but hey, this server should only be used for testing.
+  function getCondition(condition) {
+    condition = condition || true;
+    return new Function('r', 'return ' + condition + ';');
+  }
+
   var u = require('url').parse(request.url);
   var qs = require('querystring').parse(u.query);
   var options = {};
@@ -99,6 +105,11 @@ function getOptions(request) {
 
   // If this is an array, all details must be in the array.
   if (typeOf(options) == 'array') {
+    for (var i = 0; i < options.length; i++) {
+      // Set certain defaults on each object.
+      options[i].condition = getCondition(options[i].condition);
+      options[i].statusCode = options[i].statusCode || getStatus(u);
+    }
     return options;
   }
 
@@ -127,9 +138,7 @@ function getOptions(request) {
   // Add the status code to the response.
   options.statusCode = getStatus(u);
 
-  // This is dangerous, but hey, this server should only be used for testing.
-  var condition = options.condition || 'true';
-  options.condition = new Function('r', 'return ' + condition + ';');
+  options.condition = getCondition(options.condition);
 
   return [options];
 }
