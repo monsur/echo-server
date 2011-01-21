@@ -12,6 +12,10 @@ To run the server:
 
   node echo-server.js
 
+By default echo server runs on port 8124.  You can run on a different port with the --port options:
+
+  node echo-server.js --port 12345
+
 Usage
 -----
 
