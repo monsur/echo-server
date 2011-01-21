@@ -1,6 +1,48 @@
-var http = require('http');
-var querystring = require('querystring');
-var url = require('url');
+
+// From http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
+var HTTP_STATUS_MESSAGES = {
+  100: "Continue",
+  101: "Switching Protocols",
+  200: "OK",
+  201: "Created",
+  202: "Accepted",
+  203: "Non-Authoritative Information",
+  204: "No Content",
+  205: "Reset Content",
+  206: "Partial Content",
+  300: "Multiple Choices",
+  301: "Moved Permanently",
+  302: "Found",
+  303: "See Other",
+  304: "Not Modified",
+  305: "Use Proxy",
+  307: "Temporary Redirect",
+  400: "Bad Request",
+  401: "Unauthorized",
+  402: "Payment Required",
+  403: "Forbidden",
+  404: "Not Found",
+  405: "Method Not Allowed",
+  406: "Not Acceptable",
+  407: "Proxy Authentication Required",
+  408: "Request Timeout",
+  409: "Conflict",
+  410: "Gone",
+  411: "Length Required",
+  412: "Precondition Failed",
+  413: "Request Entity Too Large",
+  414: "Request-URI Too Long",
+  415: "Unsupported Media Type",
+  416: "Requested Range Not Satisfiable",
+  417: "Expectation Failed",
+  500: "Internal Server Error",
+  501: "Not Implemented",
+  502: "Bad Gateway",
+  503: "Service Unavailable",
+  504: "Gateway Timeout",
+  505: "HTTP Version Not Supported"
+};
+
 
 // Retrieve the port from the --port command line parameter.
 // If --port is not specified, return the default port.
@@ -46,8 +88,8 @@ function getOptions(request) {
     return status;
   };
 
-  var u = url.parse(request.url);
-  var qs = querystring.parse(u.query);
+  var u = require('url').parse(request.url);
+  var qs = require('querystring').parse(u.query);
   var options = {};
 
   // Load any options in a serialized json object.
@@ -85,6 +127,7 @@ function getOptions(request) {
   // Add the status code to the response.
   options.statusCode = getStatus(u);
 
+  // This is dangerous, but hey, this server should only be used for testing.
   var condition = options.condition || 'true';
   options.condition = new Function('r', 'return ' + condition + ';');
 
@@ -120,7 +163,7 @@ function getBody(request, response, options) {
   body += '\r\n\r\n' + separator + '\r\nRESPONSE\r\n\r\n'
   body += options.statusCode;
   if (options.reasonPhrase) {
-    body += ' ' + options.reasonPhrase + '\r\n';
+    body += ' ' + options.reasonPhrase;
   }
   body += '\r\n';
   body += getHeadersAsString(options.headers);
@@ -134,6 +177,7 @@ function getBody(request, response, options) {
 }
 
 function createResponse(request, response, options) {
+  options.reasonPhrase = options.reasonPhrase || HTTP_STATUS_MESSAGES[options.statusCode];
   options.headers = options.headers || {};
   options.headers['Content-Type'] = options.headers['Content-Type'] || 'text/plain';
   options.headers['Cache-Control'] = options.headers['Cache-Control'] || 'no-cache';
@@ -143,7 +187,7 @@ function createResponse(request, response, options) {
 
 var port = getPort();
 
-http.createServer(function (request, response) {
+require('http').createServer(function (request, response) {
   var options = getOptions(request);
   var match = null;
   for (var i = 0; i < options.length; i++) {
@@ -158,11 +202,7 @@ http.createServer(function (request, response) {
     match = getDefaultOptions();
   }
   createResponse(request, response, match);
-  if (match.reasonPhrase) {
-    response.writeHead(match.statusCode, match.reasonPhrase, match.headers);
-  } else {
-    response.writeHead(match.statusCode, match.headers);
-  }
+  response.writeHead(match.statusCode, match.reasonPhrase, match.headers);
   console.log(match.body);
   response.end(match.body);
 }).listen(port);
