@@ -110,21 +110,72 @@
 
   function getServerSettings() {
     var settings = {};
-    settings['url'] = $('#server_url').val();
-    settings['enableCors'] = $('#server_enableCors').val();
+    settings.url = $('#server_url').val();
+    settings.enableCors = $('#server_enableCors').attr('checked');
+    settings.allowCredentials = $('#server_allowCredentials').attr('checked');
+    settings.allowMethods = $('#server_allowMethods').val();
+    settings.allowHeaders = $('#server_allowHeaders').val();
     return settings;
   }
 
   function getClientSettings() {
     var settings = {};
+    settings.httpMethod = $('#client_httpMethod').val();
+    settings.withCredentials = $('#client_withCredentials').attr('checked');
+    settings.headers = $('#client_headers').val();
     return settings;
   }
 
   function getSettings() {
     var settings = {};
-    settings['server'] = getServerSettings();
-    settings['client'] = getClientSettings();
+    settings.server = getServerSettings();
+    settings.client = getClientSettings();
     return settings;
+  }
+
+  function getResponseSettings(settings) {
+    // [{"statusCode":200,"condition":"r.method==\"OPTIONS\"&&r.headers[\"origin\"]"
+    // ,"headers":{"Access-Control-Allow-Origin":"http://www.corp.google.com",
+    // "Access-Control-Allow-Methods":"GET,PUT,POST,DELETE",
+    // "Access-Control-Allow-Headers":"Content-Type"}},
+    // {"statusCode":200,"condition":"r.headers[\"origin\"]",
+    // "headers":{"Access-Control-Allow-Origin":"http://www.corp.google.com"}}]
+    settings = settings || {};
+    var responseConfig = [];
+    var preflightConfig = {};
+    var corsConfig = {};
+
+    preflightConfig.statusCode = 200;
+    preflightConfig.condition = 'r.method == "OPTIONS" && r.header["origin"]';
+    preflightConfig.headers = {};
+    if (settings.enableCors) {
+      preflightConfig.headers['Access-Control-Allow-Origin'] = window.location.origin;
+    }
+    if (settings.allowCredentials) {
+      preflightConfig.headers['Access-Control-Allow-Credentals'] = true;
+    }
+    if (settings.allowMethods) {
+      preflightConfig.headers['Access-Control-Allow-Methods'] = settings.allowMethods;
+    }
+    if (settings.allowHeaders) {
+      preflightConfig.headers['Access-Control-Allow-Headers'] = settings.allowHeaders;
+    }
+    responseConfig.push(preflightConfig);
+
+    corsConfig.statusCode = 200;
+    corsConfig.condition = 'r.header["origin"]';
+    preflightConfig.headers = {};
+    if (settings.enableCors) {
+      corsConfig.headers['Access-Control-Allow-Origin'] = window.location.origin;
+    }
+    responseConfig.push(corsConfig);
+
+    return responseConfig;
+  }
+
+  function sendRequest() {
+    var settings = getSettings();
+    var responseConfig = getResponseConfig(settings.server);
   }
 </script>
 </body>
