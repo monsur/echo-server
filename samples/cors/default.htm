@@ -104,5 +104,28 @@
 </div>
 
 </div>
+
+<script src="jquery-1.4.4.min.js"></script>
+<script>
+
+  function getServerSettings() {
+    var settings = {};
+    settings['url'] = $('#server_url').val();
+    settings['enableCors'] = $('#server_enableCors').val();
+    return settings;
+  }
+
+  function getClientSettings() {
+    var settings = {};
+    return settings;
+  }
+
+  function getSettings() {
+    var settings = {};
+    settings['server'] = getServerSettings();
+    settings['client'] = getClientSettings();
+    return settings;
+  }
+</script>
 </body>
 </html>

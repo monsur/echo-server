@@ -14,7 +14,7 @@ function getPort() {
 }
 
 var port = getPort();
-var filename = './default.htm';
+var filename = 'default.htm';
 
 var contents = null;
 function loadFileContents() {
@@ -23,9 +23,17 @@ function loadFileContents() {
 loadFileContents();
 fs.watchFile(filename, {interval: 1000}, loadFileContents);
 
+var jqueryFilename = 'jquery-1.4.4.min.js';
+var jquery = fs.readFileSync(jqueryFilename);
+
 require('http').createServer(function (request, response) {
-  response.writeHead(200, {'Content-Type': 'text/html'});
-  response.end(contents);
+  if (request.url.indexOf(jqueryFilename) > 0) {
+  response.writeHead(200, {'Content-Type': 'text/javascript'});
+  response.end(jquery);
+  } else {
+    response.writeHead(200, {'Content-Type': 'text/html'});
+    response.end(contents);
+  }
 }).listen(port);
 
 console.log('Server running at http://127.0.0.1:' + port + '/');
