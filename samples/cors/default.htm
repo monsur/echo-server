@@ -122,7 +122,7 @@
     var settings = {};
     settings.httpMethod = $('#client_httpMethod').val();
     settings.withCredentials = $('#client_withCredentials').attr('checked');
-    settings.headers = $('#client_headers').val();
+    settings.headers = parseHeaders($('#client_headers').val());
     return settings;
   }
 
@@ -134,12 +134,6 @@
   }
 
   function getResponseSettings(settings) {
-    // [{"statusCode":200,"condition":"r.method==\"OPTIONS\"&&r.headers[\"origin\"]"
-    // ,"headers":{"Access-Control-Allow-Origin":"http://www.corp.google.com",
-    // "Access-Control-Allow-Methods":"GET,PUT,POST,DELETE",
-    // "Access-Control-Allow-Headers":"Content-Type"}},
-    // {"statusCode":200,"condition":"r.headers[\"origin\"]",
-    // "headers":{"Access-Control-Allow-Origin":"http://www.corp.google.com"}}]
     settings = settings || {};
     var responseConfig = [];
     var preflightConfig = {};
@@ -173,9 +167,50 @@
     return responseConfig;
   }
 
+  function getRequestUrl(config) {
+    config = config || {};
+    return '/200?json=' + JSON.stringify(config);
+  }
+
+  function parseHeaders(headerStr) {
+    var headers = {};
+    if (!headerStr) {
+      return headers;
+    }
+    var headerPairs = headerStr.split('\n');
+    for (var i = 0; i < headerPairs.length; i++) {
+      var headerPair = headerPairs[i];
+      var index = headerPair.indexOf(': ');
+      if (index > 0) {
+        var key = $.trim(headerPair.substring(0, index));
+        var val = $.trim(headerPair.substring(index + 2));
+        headers[key] = val;
+      }
+    }
+    return headers;
+  }
+
+  function createCORSRequest(method, url){
+    var xhr = new XMLHttpRequest();
+    if ("withCredentials" in xhr){
+      xhr.open(method, url, true);
+    } else if (typeof XDomainRequest != "undefined"){
+      xhr = new XDomainRequest();
+      xhr.open(method, url);
+    } else {
+      xhr = null;
+    }
+    return xhr;
+  }
+
   function sendRequest() {
     var settings = getSettings();
     var responseConfig = getResponseConfig(settings.server);
+    var requestUrl = getRequestUrl(responseConfig);
+    var xhr = createCORSRequest(settings.client.httpMethod, requestUrl);
+    if (settings.withCredentals) {
+      xhr.withCredentials = true;
+    }
   }
 </script>
 </body>
