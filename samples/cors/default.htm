@@ -1,6 +1,108 @@
 <html>
-  <head>
-  </head>
-  <body>
-  </body>
+<head>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+  }
+  html, body {
+    margin: 0;
+    padding: 0;
+    font-family:Verdana, Arial, Helvetica, sans-serif;
+    font-size:12px;
+  }
+  div {
+  }
+  #left {
+    float: left;
+    margin-right: 20px;
+  }
+  #server {
+    margin-bottom: 10px;
+  }
+  #client {
+  }
+  #response {
+  }
+  #response_content {
+    width: 100%;
+    height: 50%;
+  }
+  label{
+    display: block;
+    float: left;
+    text-align: right;
+    white-space: nowrap;
+    width: 120px;
+  }
+</style>
+</head>
+<body>
+
+<div id="content">
+<div id="left">
+<div id="server">
+<fieldset>
+  <legend>
+    Server
+  </legend>
+
+  <label for="server_url">Server URL:</label>
+  <input type="url" id="server_url" placeholder="http://localhost:8124/" />
+  <br />
+
+  <label for="server_enableCors">Enable CORS:</label>
+  <input type="checkbox" id="server_enableCors" />
+  <br />
+
+  <label for="server_allowCredentials">Allow Credentials:</label>
+  <input type="checkbox" id="server_allowCredentials" />
+  <br />
+
+  <label for="server_allowMethods">Allow Methods:</label>
+  <input type="text" id="server_allowMethods" />
+  <br />
+
+  <label for="server_allowHeaders">Allow Headers:</label>
+  <input type="text" id="server_allowHeaders" />
+  <br />
+</fieldset>
+</div>
+
+<div id="client">
+<fieldset>
+  <legend>
+    Client
+  </legend>
+
+  <label for="client_httpMethod">HTTP Method</label>
+  <input type="text" id="client_httpMethod" placeholder="GET" />
+  <br />
+
+  <label for="client_Credentials">With Credentials:</label>
+  <input type="checkbox" id="client_withCredentials" />
+  <br />
+
+  <label for="client_headers">Headers</label><br />
+  <textarea id="client_headers"></textarea>
+  <br />
+
+</fieldset>
+
+  <input type="submit" id="client_sendRequest" value="Send Request" class=".button" />
+</div>
+</div>
+
+<div id="response">
+  <fieldset>
+    <legend>
+      Response
+    </legend>
+
+    <textarea id="response_content"></textarea>
+  </fieldset>
+</div>
+
+</div>
+</body>
 </html>

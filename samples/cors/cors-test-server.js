@@ -21,7 +21,7 @@ function loadFileContents() {
   contents = fs.readFileSync(filename);
 }
 loadFileContents();
-fs.watchFile(filename, {interval: 2000}, loadFileContents);
+fs.watchFile(filename, {interval: 1000}, loadFileContents);
 
 require('http').createServer(function (request, response) {
   response.writeHead(200, {'Content-Type': 'text/html'});
@@ -29,4 +29,3 @@ require('http').createServer(function (request, response) {
 }).listen(port);
 
 console.log('Server running at http://127.0.0.1:' + port + '/');
-
