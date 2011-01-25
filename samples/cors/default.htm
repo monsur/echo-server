@@ -1,0 +1,303 @@
+<html>
+<head>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+  }
+  html, body {
+    margin: 0;
+    padding: 0;
+    font-family:Verdana, Arial, Helvetica, sans-serif;
+    font-size:12px;
+  }
+  div {
+  }
+  #left {
+    float: left;
+    margin-right: 20px;
+  }
+  #server {
+    margin-bottom: 10px;
+  }
+  #client {
+  }
+  #response {
+  }
+  #response_content {
+    width: 100%;
+    height: 50%;
+  }
+  label{
+    display: block;
+    float: left;
+    text-align: right;
+    white-space: nowrap;
+    width: 120px;
+  }
+  #response_events {
+    float: left;
+  }
+  #response_details {
+    float: left;
+  }
+</style>
+</head>
+<body>
+
+<div id="content">
+<div id="left">
+<div id="server">
+<fieldset>
+  <legend>
+    Server
+  </legend>
+
+  <label for="server_url">Server URL:</label>
+  <input type="url" id="server_url" value="http://localhost:8124/" />
+  <br />
+
+  <label for="server_enableCors">Enable CORS:</label>
+  <input type="checkbox" id="server_enableCors" checked />
+  <br />
+
+  <label for="server_allowCredentials">Allow Credentials:</label>
+  <input type="checkbox" id="server_allowCredentials" />
+  <br />
+
+  <label for="server_allowMethods">Allow Methods:</label>
+  <input type="text" id="server_allowMethods" />
+  <br />
+
+  <label for="server_allowHeaders">Allow Headers:</label>
+  <input type="text" id="server_allowHeaders" />
+  <br />
+</fieldset>
+</div>
+
+<div id="client">
+<fieldset>
+  <legend>
+    Client
+  </legend>
+
+  <label for="client_httpMethod">HTTP Method</label>
+  <input type="text" id="client_httpMethod" value="GET" />
+  <br />
+
+  <label for="client_Credentials">With Credentials:</label>
+  <input type="checkbox" id="client_withCredentials" />
+  <br />
+
+  <label for="client_headers">Headers</label><br />
+  <textarea id="client_headers"></textarea>
+  <br />
+
+</fieldset>
+
+  <input type="submit" id="client_sendRequest" value="Send Request" class=".button" onclick="sendRequest(); return false;" />
+</div>
+</div>
+
+<div id="response">
+  <fieldset>
+    <legend>
+      Response
+    </legend>
+
+    <div id="response_events">Events: <div id="response_events_content"></div></div>
+
+    <div id="response_details">
+    <div id="response_status">Status: <span id="response_status_content"></span></div>
+    <div id="response_statusText">Status Text: <span id="response_statusText_content"></span></div>
+    <div id="response_headers">Headers: <pre id="response_headers_content"></pre></div>
+    <div id="response_body">Body: <textarea id="response_body_content"></textarea></div>
+    </div>
+  </fieldset>
+</div>
+
+</div>
+
+<script src="jquery-1.4.4.min.js"></script>
+<script>
+
+  function getServerSettings() {
+    var settings = {};
+    var url = $('#server_url').val();
+    if (url.substring(url.length-1) != '/') {
+      url += '/';
+    }
+    settings.url = url;
+    settings.enableCors = $('#server_enableCors').attr('checked');
+    settings.allowCredentials = $('#server_allowCredentials').attr('checked');
+    settings.allowMethods = $('#server_allowMethods').val();
+    settings.allowHeaders = $('#server_allowHeaders').val();
+    return settings;
+  }
+
+  function getClientSettings() {
+    var settings = {};
+    settings.httpMethod = $('#client_httpMethod').val();
+    settings.withCredentials = $('#client_withCredentials').attr('checked');
+    settings.headers = parseHeaders($('#client_headers').val());
+    return settings;
+  }
+
+  function getSettings() {
+    var settings = {};
+    settings.server = getServerSettings();
+    settings.client = getClientSettings();
+    return settings;
+  }
+
+  function getResponseConfig(settings) {
+    settings = settings || {};
+    var responseConfig = [];
+    var preflightConfig = {};
+    var corsConfig = {};
+
+    preflightConfig.statusCode = 200;
+    preflightConfig.condition = 'r.method == "OPTIONS" && r.headers["origin"]';
+    preflightConfig.headers = {};
+    if (settings.enableCors) {
+      preflightConfig.headers['Access-Control-Allow-Origin'] = window.location.origin;
+    }
+    if (settings.allowCredentials) {
+      preflightConfig.headers['Access-Control-Allow-Credentals'] = true;
+    }
+    if (settings.allowMethods) {
+      preflightConfig.headers['Access-Control-Allow-Methods'] = settings.allowMethods;
+    }
+    if (settings.allowHeaders) {
+      preflightConfig.headers['Access-Control-Allow-Headers'] = settings.allowHeaders;
+    }
+    responseConfig.push(preflightConfig);
+
+    corsConfig.statusCode = 200;
+    corsConfig.condition = 'r.headers["origin"]';
+    corsConfig.headers = {};
+    if (settings.enableCors) {
+      corsConfig.headers['Access-Control-Allow-Origin'] = window.location.origin;
+    }
+    responseConfig.push(corsConfig);
+
+    return responseConfig;
+  }
+
+  function getRequestUrl(url, config) {
+    return url + '200?json=' + encodeURIComponent(JSON.stringify(config));
+  }
+
+  function parseHeaders(headerStr) {
+    var headers = {};
+    if (!headerStr) {
+      return headers;
+    }
+    var headerPairs = headerStr.split('\n');
+    for (var i = 0; i < headerPairs.length; i++) {
+      var headerPair = headerPairs[i];
+      var index = headerPair.indexOf(': ');
+      if (index > 0) {
+        var key = $.trim(headerPair.substring(0, index));
+        var val = $.trim(headerPair.substring(index + 2));
+        headers[key] = val;
+      }
+    }
+    return headers;
+  }
+
+  function createCORSRequest(method, url){
+    var xhr = new XMLHttpRequest();
+    if ("withCredentials" in xhr){
+      xhr.open(method, url, true);
+    } else if (typeof XDomainRequest != "undefined"){
+      xhr = new XDomainRequest();
+      xhr.open(method, url);
+    } else {
+      xhr = null;
+    }
+    return xhr;
+  }
+
+  function resetResponseDivs() {
+    $('#response_events_content').empty();
+    $('#response_status_content').empty();
+    $('#response_statusText_content').empty();
+    $('#response_headers_content').empty();
+    $('#response_body_content').empty();
+  }
+
+  function logEvent(msg) {
+    $('#response_events_content').append(msg + '<br>');
+  }
+
+  function logXhr(xhr) {
+    $('#response_status_content').text(xhr.status);
+    $('#response_statusText_content').text(xhr.statusText);
+    $('#response_headers_content').text(xhr.getAllResponseHeaders());
+    $('#response_body_content').text(xhr.responseText);
+  }
+
+  function handleReadyStateChange(event) {
+    logEvent('readystatechange');
+  }
+
+  function handleLoadStart(event) {
+    logEvent('loadstart');
+  }
+
+  function handleProgress(event) {
+    logEvent('progress');
+  }
+
+  function handleAbort(event) {
+    logEvent('abort');
+  }
+
+  function handleError(event) {
+    logEvent('error');
+    logXhr(event.currentTarget);
+  }
+
+  function handleLoad(event) {
+    logEvent('load');
+    logXhr(event.currentTarget);
+  }
+
+  function handleTimeout(event) {
+    logEvent('timeout');
+  }
+
+  function handleLoadEnd(event) {
+    logEvent('loadend');
+  }
+
+  function sendRequest() {
+    resetResponseDivs();
+    var settings = getSettings();
+    var responseConfig = getResponseConfig(settings.server);
+    var requestUrl = getRequestUrl(settings.server.url, responseConfig);
+    var xhr = createCORSRequest(settings.client.httpMethod, requestUrl);
+    if (settings.withCredentals) {
+      xhr.withCredentials = true;
+    }
+    var headers = settings.client.headers;
+    for (var name in headers) {
+      if (!headers.hasOwnProperty(name)) {
+        continue;
+      }
+      xhr.setRequestHeader(name, headers[name]);
+    }
+    xhr.onreadystatechange = handleReadyStateChange;
+    xhr.onloadstart = handleLoadStart;
+    xhr.onprogress = handleProgress;
+    xhr.onabort = handleAbort;
+    xhr.onerror = handleError;
+    xhr.onload = handleLoad;
+    xhr.ontimeout = handleTimeout;
+    xhr.onloadend = handleLoadEnd;
+    xhr.send();
+  }
+</script>
+</body>
+</html>

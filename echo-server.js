@@ -1,3 +1,6 @@
+// TODO: Save requests in a cache.  parameter "id" is used to distinguish
+// requests, while "reset=true" resets the cache.
+// TODO: Better error handling so server doesn't die.
 
 // From http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
 var HTTP_STATUS_MESSAGES = {
