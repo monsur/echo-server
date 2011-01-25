@@ -150,6 +150,15 @@
     return settings;
   }
 
+  function getOrigin(location) {
+    if (location.origin) {
+      return location.origin;
+    }
+    // Firefox 3.6 doesn't have window.location.origin, construct the origin
+    // header manually.
+    return location.protocol + '//' + location.host;
+  }
+
   function getResponseConfig(settings) {
     settings = settings || {};
     var responseConfig = [];
@@ -177,7 +186,7 @@
     corsConfig.condition = 'r.headers["origin"]';
     corsConfig.headers = {};
     if (settings.enableCors) {
-      corsConfig.headers['Access-Control-Allow-Origin'] = window.location.origin;
+      corsConfig.headers['Access-Control-Allow-Origin'] = getOrigin(window.location);;
     }
     responseConfig.push(corsConfig);
 
