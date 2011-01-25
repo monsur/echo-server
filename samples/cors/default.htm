@@ -278,7 +278,7 @@
     var responseConfig = getResponseConfig(settings.server);
     var requestUrl = getRequestUrl(settings.server.url, responseConfig);
     var xhr = createCORSRequest(settings.client.httpMethod, requestUrl);
-    if (settings.withCredentals) {
+    if (settings.client.withCredentials) {
       xhr.withCredentials = true;
     }
     var headers = settings.client.headers;
