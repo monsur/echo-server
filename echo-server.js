@@ -2,6 +2,7 @@
 //       in the query string. Query parameter "reset=true" resets the cache.
 // TODO: Change "condition" parameter to accept an object of regex strings.
 // TODO: Better error handling so server doesn't die.
+// TODO: Allow arbritraries paths, allow path to be part of condition.
 
 // From http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
 var HTTP_STATUS_MESSAGES = {
