@@ -1,5 +1,6 @@
-// TODO: Save requests in a cache.  parameter "id" is used to distinguish
-// requests, while "reset=true" resets the cache.
+// TODO: Save requests in a history object, keyed off an "id" parameter passed
+//       in the query string. Query parameter "reset=true" resets the cache.
+// TODO: Change "condition" parameter to accept an object of regex strings.
 // TODO: Better error handling so server doesn't die.
 
 // From http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
