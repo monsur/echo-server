@@ -48,11 +48,11 @@
   </legend>
 
   <label for="server_url">Server URL:</label>
-  <input type="url" id="server_url" placeholder="http://localhost:8124/" />
+  <input type="url" id="server_url" value="http://localhost:8124/" />
   <br />
 
   <label for="server_enableCors">Enable CORS:</label>
-  <input type="checkbox" id="server_enableCors" />
+  <input type="checkbox" id="server_enableCors" checked />
   <br />
 
   <label for="server_allowCredentials">Allow Credentials:</label>
@@ -76,7 +76,7 @@
   </legend>
 
   <label for="client_httpMethod">HTTP Method</label>
-  <input type="text" id="client_httpMethod" placeholder="GET" />
+  <input type="text" id="client_httpMethod" value="GET" />
   <br />
 
   <label for="client_Credentials">With Credentials:</label>
@@ -89,7 +89,7 @@
 
 </fieldset>
 
-  <input type="submit" id="client_sendRequest" value="Send Request" class=".button" />
+  <input type="submit" id="client_sendRequest" value="Send Request" class=".button" onclick="sendRequest(); return false;" />
 </div>
 </div>
 
@@ -110,7 +110,11 @@
 
   function getServerSettings() {
     var settings = {};
-    settings.url = $('#server_url').val();
+    var url = $('#server_url').val();
+    if (url.substring(url.length-1) != '/') {
+      url += '/';
+    }
+    settings.url = url;
     settings.enableCors = $('#server_enableCors').attr('checked');
     settings.allowCredentials = $('#server_allowCredentials').attr('checked');
     settings.allowMethods = $('#server_allowMethods').val();
@@ -133,14 +137,14 @@
     return settings;
   }
 
-  function getResponseSettings(settings) {
+  function getResponseConfig(settings) {
     settings = settings || {};
     var responseConfig = [];
     var preflightConfig = {};
     var corsConfig = {};
 
     preflightConfig.statusCode = 200;
-    preflightConfig.condition = 'r.method == "OPTIONS" && r.header["origin"]';
+    preflightConfig.condition = 'r.method == "OPTIONS" && r.headers["origin"]';
     preflightConfig.headers = {};
     if (settings.enableCors) {
       preflightConfig.headers['Access-Control-Allow-Origin'] = window.location.origin;
@@ -157,8 +161,8 @@
     responseConfig.push(preflightConfig);
 
     corsConfig.statusCode = 200;
-    corsConfig.condition = 'r.header["origin"]';
-    preflightConfig.headers = {};
+    corsConfig.condition = 'r.headers["origin"]';
+    corsConfig.headers = {};
     if (settings.enableCors) {
       corsConfig.headers['Access-Control-Allow-Origin'] = window.location.origin;
     }
@@ -167,9 +171,8 @@
     return responseConfig;
   }
 
-  function getRequestUrl(config) {
-    config = config || {};
-    return '/200?json=' + JSON.stringify(config);
+  function getRequestUrl(url, config) {
+    return url + '200?json=' + encodeURIComponent(JSON.stringify(config));
   }
 
   function parseHeaders(headerStr) {
@@ -203,14 +206,70 @@
     return xhr;
   }
 
+  function handleReadyStateChange(event) {
+    console.log('readystatechange');
+    console.log(event);
+  }
+
+  function handleLoadStart(event) {
+    console.log('loadstart');
+    console.log(event);
+  }
+
+  function handleProgress(event) {
+    console.log('progress');
+    console.log(event);
+  }
+
+  function handleAbort(event) {
+    console.log('abort');
+    console.log(event);
+  }
+
+  function handleError(event) {
+    console.log('error');
+    console.log(event);
+  }
+
+  function handleLoad(event) {
+    console.log('load');
+    console.log(event);
+  }
+
+  function handleTimeout(event) {
+    console.log('timeout');
+    console.log(event);
+  }
+
+  function handleLoadEnd(event) {
+    console.log('loadend');
+    console.log(event);
+  }
+
   function sendRequest() {
     var settings = getSettings();
     var responseConfig = getResponseConfig(settings.server);
-    var requestUrl = getRequestUrl(responseConfig);
+    var requestUrl = getRequestUrl(settings.server.url, responseConfig);
     var xhr = createCORSRequest(settings.client.httpMethod, requestUrl);
     if (settings.withCredentals) {
       xhr.withCredentials = true;
     }
+    var headers = settings.client.headers;
+    for (var name in headers) {
+      if (!headers.hasOwnProperty(name)) {
+        continue;
+      }
+      xhr.setRequestHeader(name, headers[name]);
+    }
+    xhr.onreadystatechange = handleReadyStateChange;
+    xhr.onloadstart = handleLoadStart;
+    xhr.onprogress = handleProgress;
+    xhr.onabort = handleAbort;
+    xhr.onerror = handleError;
+    xhr.onload = handleLoad;
+    xhr.ontimeout = handleTimeout;
+    xhr.onloadend = handleLoadEnd;
+    xhr.send();
   }
 </script>
 </body>
