@@ -111,6 +111,7 @@
     <div id="response_status">Status: <span id="response_status_content"></span></div>
     <div id="response_statusText">Status Text: <span id="response_statusText_content"></span></div>
     <div id="response_headers">Headers: <pre id="response_headers_content"></pre></div>
+    <div id="response_body">Body: <textarea id="response_body_content"></textarea></div>
     </div>
   </fieldset>
 </div>
@@ -223,6 +224,7 @@
     $('#response_status_content').empty();
     $('#response_statusText_content').empty();
     $('#response_headers_content').empty();
+    $('#response_body_content').empty();
   }
 
   function logEvent(msg) {
@@ -233,6 +235,7 @@
     $('#response_status_content').text(xhr.status);
     $('#response_statusText_content').text(xhr.statusText);
     $('#response_headers_content').text(xhr.getAllResponseHeaders());
+    $('#response_body_content').text(xhr.responseText);
   }
 
   function handleReadyStateChange(event) {
