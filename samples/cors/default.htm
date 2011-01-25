@@ -233,7 +233,10 @@
 
   function logXhr(xhr) {
     $('#response_status_content').text(xhr.status);
-    $('#response_statusText_content').text(xhr.statusText);
+    if (xhr.status > 0) {
+      // Firefox doesn't allow access to statusText when there's an error.
+      $('#response_statusText_content').text(xhr.statusText);
+    }
     $('#response_headers_content').text(xhr.getAllResponseHeaders());
     $('#response_body_content').text(xhr.responseText);
   }
