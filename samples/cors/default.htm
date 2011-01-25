@@ -35,6 +35,12 @@
     white-space: nowrap;
     width: 120px;
   }
+  #response_events {
+    float: left;
+  }
+  #response_details {
+    float: left;
+  }
 </style>
 </head>
 <body>
@@ -99,7 +105,13 @@
       Response
     </legend>
 
-    <textarea id="response_content"></textarea>
+    <div id="response_events">Events: <div id="response_events_content"></div></div>
+
+    <div id="response_details">
+    <div id="response_status">Status: <span id="response_status_content"></span></div>
+    <div id="response_statusText">Status Text: <span id="response_statusText_content"></span></div>
+    <div id="response_headers">Headers: <pre id="response_headers_content"></pre></div>
+    </div>
   </fieldset>
 </div>
 
@@ -206,47 +218,59 @@
     return xhr;
   }
 
+  function resetResponseDivs() {
+    $('#response_events_content').empty();
+    $('#response_status_content').empty();
+    $('#response_statusText_content').empty();
+    $('#response_headers_content').empty();
+  }
+
+  function logEvent(msg) {
+    $('#response_events_content').append(msg + '<br>');
+  }
+
+  function logXhr(xhr) {
+    $('#response_status_content').text(xhr.status);
+    $('#response_statusText_content').text(xhr.statusText);
+    $('#response_headers_content').text(xhr.getAllResponseHeaders());
+  }
+
   function handleReadyStateChange(event) {
-    console.log('readystatechange');
-    console.log(event);
+    logEvent('readystatechange');
   }
 
   function handleLoadStart(event) {
-    console.log('loadstart');
-    console.log(event);
+    logEvent('loadstart');
   }
 
   function handleProgress(event) {
-    console.log('progress');
-    console.log(event);
+    logEvent('progress');
   }
 
   function handleAbort(event) {
-    console.log('abort');
-    console.log(event);
+    logEvent('abort');
   }
 
   function handleError(event) {
-    console.log('error');
-    console.log(event);
+    logEvent('error');
+    logXhr(event.currentTarget);
   }
 
   function handleLoad(event) {
-    console.log('load');
-    console.log(event);
+    logEvent('load');
+    logXhr(event.currentTarget);
   }
 
   function handleTimeout(event) {
-    console.log('timeout');
-    console.log(event);
+    logEvent('timeout');
   }
 
   function handleLoadEnd(event) {
-    console.log('loadend');
-    console.log(event);
+    logEvent('loadend');
   }
 
   function sendRequest() {
+    resetResponseDivs();
     var settings = getSettings();
     var responseConfig = getResponseConfig(settings.server);
     var requestUrl = getRequestUrl(settings.server.url, responseConfig);
