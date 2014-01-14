@@ -252,9 +252,24 @@ require('http').createServer(function (request, response) {
             response.end();
         });
     } else {
-        response.writeHead(200, "OK", {'Content-Type': 'text/plain'});
-        response.end();
+    var options = getOptions(request);
+  var match = null;
+  for (var i = 0; i < options.length; i++) {
+    var option = options[i];
+    var result = option.condition.call(null, request);
+    if (result) {
+      match = option;
+      break;
     }
+  }
+  if (!match) {
+    match = getDefaultOptions();
+  }
+  createResponse(request, response, match);
+  response.writeHead(match.statusCode, match.reasonPhrase, match.headers);
+  console.log(match.body);
+  response.end(match.body);
+}
 }).listen(port);
 
 console.log('Server running at http://127.0.0.1:' + port + '/');
