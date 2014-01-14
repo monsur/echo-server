@@ -48,7 +48,7 @@ var HTTP_STATUS_MESSAGES = {
   505: "HTTP Version Not Supported"
 };
 
-
+var querystring = require('querystring');
 // Retrieve the port from the --port command line parameter.
 // If --port is not specified, return the default port.
 function getPort() {
@@ -165,13 +165,16 @@ function getHeadersAsString(headers) {
   }
   return body;
 }
-
+    var queryData = "";
 function getBody(request, response, options) {
   var separator = '====================';
   var body = separator + '\r\nREQUEST\r\n\r\n';
   body += request.method + ' ' + request.url + '\r\n';
   body += getHeadersAsString(request.headers);
 
+  body += '\r\n\r\n' + separator + '\r\nREQUEST BODY\r\n\r\n';
+  body += queryData;
+  queryData = "";
   // TODO: add request body
 
   body += '\r\n\r\n' + separator + '\r\nRESPONSE\r\n\r\n'
@@ -190,6 +193,47 @@ function getBody(request, response, options) {
   return body;
 }
 
+function processPost(request, response, callback) {
+    if(typeof callback !== 'function') return null;
+
+    if(request.method == 'POST') {
+        request.on('data', function(data) {
+            queryData += data;
+            if(queryData.length > 1e6) {
+                queryData = "";
+                response.writeHead(413, {'Content-Type': 'text/plain'}).end();
+                request.connection.destroy();
+            }
+        });
+        request.on('end', function() {
+        var options = getOptions(request);
+        var match = null;
+
+        for (var i = 0; i < options.length; i++) {
+        var option = options[i];
+        var result = option.condition.call(null, request);
+         if (result) {
+            match = option;
+            break;
+         }
+        }
+  		if (!match) {
+    		match = getDefaultOptions();
+  		}
+          response.post = querystring.parse(queryData);
+          createResponse(request, response, match);
+		  response.writeHead(match.statusCode, match.reasonPhrase, match.headers);
+		  console.log(match.body);
+		  response.end(match.body)
+            callback();
+        });
+
+    } else {
+        response.writeHead(405, {'Content-Type': 'text/plain'});
+        response.end();
+    }
+}
+
 function createResponse(request, response, options) {
   options.reasonPhrase = options.reasonPhrase || HTTP_STATUS_MESSAGES[options.statusCode];
   options.headers = options.headers || {};
@@ -202,7 +246,13 @@ function createResponse(request, response, options) {
 var port = getPort();
 
 require('http').createServer(function (request, response) {
-  var options = getOptions(request);
+ if(request.method == 'POST') {
+        processPost(request, response, function() {
+            response.writeHead(200, "OK", {'Content-Type': 'text/plain'});
+            response.end();
+        });
+    } else {
+    var options = getOptions(request);
   var match = null;
   for (var i = 0; i < options.length; i++) {
     var option = options[i];
@@ -219,6 +269,7 @@ require('http').createServer(function (request, response) {
   response.writeHead(match.statusCode, match.reasonPhrase, match.headers);
   console.log(match.body);
   response.end(match.body);
+}
 }).listen(port);
 
 console.log('Server running at http://127.0.0.1:' + port + '/');
