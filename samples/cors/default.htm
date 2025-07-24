@@ -118,36 +118,35 @@
 
 </div>
 
-<script src="jquery-1.4.4.min.js"></script>
+<script src="jquery-3.7.1.min.js"></script>
 <script>
-
   // TODO: Add cookie support.
   // TODO: Is there a way to trap on thrown errors?
 
   function getServerSettings() {
-    var settings = {};
-    var url = $('#server_url').val();
-    if (url.substring(url.length-1) != '/') {
+    let settings = {};
+    let url = $('#server_url').val();
+    if (url.substring(url.length - 1) != '/') {
       url += '/';
     }
     settings.url = url;
-    settings.enableCors = $('#server_enableCors').attr('checked');
-    settings.allowCredentials = $('#server_allowCredentials').attr('checked');
+    settings.enableCors = $('#server_enableCors').is(':checked');
+    settings.allowCredentials = $('#server_allowCredentials').is(':checked');
     settings.allowMethods = $('#server_allowMethods').val();
     settings.allowHeaders = $('#server_allowHeaders').val();
     return settings;
   }
 
   function getClientSettings() {
-    var settings = {};
+    let settings = {};
     settings.httpMethod = $('#client_httpMethod').val();
-    settings.withCredentials = $('#client_withCredentials').attr('checked');
+    settings.withCredentials = $('#client_withCredentials').is(':checked');
     settings.headers = parseHeaders($('#client_headers').val());
     return settings;
   }
 
   function getSettings() {
-    var settings = {};
+    let settings = {};
     settings.server = getServerSettings();
     settings.client = getClientSettings();
     return settings;
@@ -164,9 +163,9 @@
 
   function getResponseConfig(settings) {
     settings = settings || {};
-    var responseConfig = [];
-    var preflightConfig = {};
-    var corsConfig = {};
+    let responseConfig = [];
+    let preflightConfig = {};
+    let corsConfig = {};
 
     preflightConfig.statusCode = 200;
     preflightConfig.condition = 'r.method == "OPTIONS" && r.headers["origin"]';
@@ -201,28 +200,28 @@
   }
 
   function parseHeaders(headerStr) {
-    var headers = {};
+    let headers = {};
     if (!headerStr) {
       return headers;
     }
-    var headerPairs = headerStr.split('\n');
-    for (var i = 0; i < headerPairs.length; i++) {
-      var headerPair = headerPairs[i];
-      var index = headerPair.indexOf(': ');
+    let headerPairs = headerStr.split('\n');
+    for (let i = 0; i < headerPairs.length; i++) {
+      let headerPair = headerPairs[i];
+      let index = headerPair.indexOf(': ');
       if (index > 0) {
-        var key = $.trim(headerPair.substring(0, index));
-        var val = $.trim(headerPair.substring(index + 2));
+        let key = $.trim(headerPair.substring(0, index));
+        let val = $.trim(headerPair.substring(index + 2));
         headers[key] = val;
       }
     }
     return headers;
   }
 
-  function createCORSRequest(method, url){
-    var xhr = new XMLHttpRequest();
-    if ("withCredentials" in xhr){
+  function createCORSRequest(method, url) {
+    let xhr = new XMLHttpRequest();
+    if ("withCredentials" in xhr) {
       xhr.open(method, url, true);
-    } else if (typeof XDomainRequest != "undefined"){
+    } else if (typeof XDomainRequest != "undefined") {
       xhr = new XDomainRequest();
       xhr.open(method, url);
     } else {
@@ -289,15 +288,15 @@
 
   function sendRequest() {
     resetResponseDivs();
-    var settings = getSettings();
-    var responseConfig = getResponseConfig(settings.server);
-    var requestUrl = getRequestUrl(settings.server.url, responseConfig);
-    var xhr = createCORSRequest(settings.client.httpMethod, requestUrl);
+    const settings = getSettings();
+    const responseConfig = getResponseConfig(settings.server);
+    const requestUrl = getRequestUrl(settings.server.url, responseConfig);
+    const xhr = createCORSRequest(settings.client.httpMethod, requestUrl);
     if (settings.client.withCredentials) {
       xhr.withCredentials = true;
     }
-    var headers = settings.client.headers;
-    for (var name in headers) {
+    const headers = settings.client.headers;
+    for (const name in headers) {
       if (!headers.hasOwnProperty(name)) {
         continue;
       }

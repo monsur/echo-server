@@ -1,39 +1,61 @@
-var fs = require('fs');
+const express = require('express');
+const fs = require('fs/promises');
+const path = require('path');
+const chokidar = require('chokidar');
+const yargs = require('yargs/yargs');
+const { hideBin } = require('yargs/helpers');
 
-// Retrieve the port from the --port command line parameter.
-// If --port is not specified, return the default port.
-// This is copied from echo-server.js, it should eventually be consolidated.
-function getPort() {
-  var argv = process.argv;
-  for (var i = 0; i < argv.length; i++) {
-    if (argv[i] == '--port') {
-      return parseInt(argv[i+1]);
+const argv = yargs(hideBin(process.argv))
+    .option('port', {
+        alias: 'p',
+        type: 'number',
+        default: 8125,
+        description: 'Port to run the server on',
+    })
+    .argv;
+
+const app = express();
+const port = argv.port;
+
+const filename = path.join(__dirname, 'default.htm');
+const jqueryFilename = path.join(__dirname, 'jquery-3.7.1.min.js');
+
+let contents = null;
+let jquery = null;
+
+async function loadFileContents() {
+    try {
+        contents = await fs.readFile(filename, 'utf-8');
+        jquery = await fs.readFile(jqueryFilename, 'utf-8');
+    } catch (error) {
+        console.error('Error loading files:', error);
+        process.exit(1);
     }
-  }
-  return 8125;
 }
 
-var port = getPort();
-var filename = 'default.htm';
+const watcher = chokidar.watch([filename, jqueryFilename]);
 
-var contents = null;
-function loadFileContents() {
-  contents = fs.readFileSync(filename);
-}
-loadFileContents();
-fs.watchFile(filename, {interval: 1000}, loadFileContents);
+watcher.on('change', (filePath) => {
+    console.log(`File ${filePath} has been changed. Reloading...`);
+    loadFileContents();
+});
 
-var jqueryFilename = 'jquery-1.4.4.min.js';
-var jquery = fs.readFileSync(jqueryFilename);
+app.get('/', (req, res) => {
+    res.type('html').send(contents);
+});
 
-require('http').createServer(function (request, response) {
-  if (request.url.indexOf(jqueryFilename) > 0) {
-  response.writeHead(200, {'Content-Type': 'text/javascript'});
-  response.end(jquery);
-  } else {
-    response.writeHead(200, {'Content-Type': 'text/html'});
-    response.end(contents);
-  }
-}).listen(port);
+app.get('/jquery-3.7.1.min.js', (req, res) => {
+    res.type('javascript').send(jquery);
+});
 
-console.log('Server running at http://127.0.0.1:' + port + '/');
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).send('Something broke!');
+});
+
+(async () => {
+    await loadFileContents();
+    app.listen(port, () => {
+        console.log(`CORS test server running at http://127.0.0.1:${port}/`);
+    });
+})();
