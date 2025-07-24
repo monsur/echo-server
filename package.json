@@ -197,7 +197,6 @@
     "strip-ansi": "^6.0.1",
     "strip-json-comments": "^3.1.1",
     "superagent": "^8.1.2",
-    "supertest": "^6.3.4",
     "supports-color": "^7.2.0",
     "to-regex-range": "^5.0.1",
     "toidentifier": "^1.0.1",
@@ -225,7 +224,8 @@
     "yocto-queue": "^0.1.0"
   },
   "devDependencies": {
-    "mocha": "^10.8.2"
+    "mocha": "^10.8.2",
+    "supertest": "^7.1.4"
   },
   "scripts": {
     "test": "mocha"

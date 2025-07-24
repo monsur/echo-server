@@ -188,7 +188,12 @@ app.all('*', (req, res) => {
     }
 });
 
-const port = argv.port;
-app.listen(port, () => {
-    console.log(`Server running at http://127.0.0.1:${port}/`);
-});
+// Start the server only if this file is run directly
+if (require.main === module) {
+    const port = argv.port;
+    app.listen(port, () => {
+        console.log(`Server running at http://127.0.0.1:${port}/`);
+    });
+}
+
+module.exports = app;
