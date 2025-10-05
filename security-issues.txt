@@ -1,49 +1,88 @@
 SECURITY ISSUES - Echo Server
 =============================
+Last Updated: 2025-10-05
 
-## Critical Issues
+## Critical Issues - FIXED ✓
 
-1. JSON Parsing without Validation (echo-server.js:71)
-   - Directly parses user-supplied JSON from query parameters without validation or error handling
-   - Could lead to DoS via deeply nested objects or prototype pollution attacks
-   - Recommendation: Add JSON schema validation and size limits
+1. JSON Parsing without Validation (echo-server.js:70-121)
+   STATUS: FIXED
+   - Added 10KB size limit for JSON parameters
+   - Implemented prototype pollution detection (__proto__, constructor, prototype)
+   - Added depth validation (max 10 levels) to prevent DoS
+   - Added comprehensive error handling
+   - 8 unit tests added to verify fix
 
-2. Arbitrary Header Injection (echo-server.js:101-113)
-   - Query parameters can inject arbitrary headers through the dot-notation parsing
-   - No validation on header names or values
-   - Could enable HTTP response splitting or header injection attacks
-   - Recommendation: Whitelist allowed headers or validate/sanitize header names
+2. Arbitrary Header Injection (echo-server.js:150-230)
+   STATUS: FIXED
+   - Implemented RFC 7230 compliant header name validation
+   - Added CRLF injection prevention for header values
+   - Whitelisted allowed root keys (headers, statusCode, reasonPhrase, body, condition)
+   - Enforced strict header depth validation (only headers.X-Name allowed)
+   - 7 unit tests added to verify fix
 
 3. No Rate Limiting
-   - No protection against DoS attacks
+   STATUS: NOT ADDRESSED
    - Recommendation: Implement rate limiting middleware (e.g., express-rate-limit)
+   - Note: This is a deployment/infrastructure concern
 
-## Moderate Issues
+## Moderate Issues - FIXED ✓
 
-4. Missing Input Validation
-   - Status codes are parsed but not validated for reasonable ranges (echo-server.js:75)
-   - No size limits on request bodies
-   - Recommendation: Validate status codes (100-599), add body size limits
+4. Missing Input Validation (echo-server.js:123-136, 205-229, 65-68)
+   STATUS: FIXED
+   - Status codes validated to be between 100-599
+   - Request body size limited to 1MB via Express middleware
+   - reasonPhrase limited to 100 characters and validated for CRLF
+   - Body parameter limited to 1MB and validated for nesting
+   - 10 unit tests added to verify fix
 
 5. Information Disclosure (echo-server.js:183)
-   - Logs entire response body to console, which may contain sensitive data
-   - Error messages could leak internal details (echo-server.js:186-187)
-   - Recommendation: Sanitize logs, use generic error messages
+   STATUS: PARTIALLY ADDRESSED
+   - Error messages now use generic "Internal Server Error"
+   - Console logging still present (for debugging purposes)
+   - Recommendation: Add production mode with reduced logging
 
 6. No Security Headers
-   - Missing security headers (X-Frame-Options, X-Content-Type-Options, etc.)
+   STATUS: NOT ADDRESSED
    - Recommendation: Add helmet middleware
+   - Note: This is a deployment/infrastructure concern
 
-## Low-Risk
+## Low-Risk - NOT ADDRESSED
 
-7. Deprecated url.parse() (echo-server.js:66)
+7. Deprecated url.parse() (echo-server.js:71)
    - Uses deprecated Node.js API
    - Recommendation: Use URL constructor instead
+   - Note: Low priority, API still works
 
 8. No HTTPS Support
    - Only runs on HTTP
-   - For production, add HTTPS support
+   - Recommendation: Add HTTPS support for production
+   - Note: Often handled at reverse proxy/load balancer level
 
 ## Dependency Security
 
 Dependencies are clean (0 vulnerabilities per npm audit).
+
+## Test Coverage Summary
+
+Total Tests: 31
+- Basic functionality: 6 tests
+- JSON security: 8 tests
+- Header injection security: 7 tests
+- Input validation: 10 tests
+
+All tests passing ✓
+
+## Security Fixes Applied
+
+1. JSON parameter validation (size, depth, prototype pollution)
+2. Header injection prevention (name/value validation, whitelisting)
+3. Input validation (status codes, body size, reasonPhrase)
+4. Request body size limits (1MB via Express middleware)
+
+## Remaining Recommendations
+
+1. Consider adding helmet middleware for security headers
+2. Implement rate limiting for production deployments
+3. Replace deprecated url.parse() with URL constructor
+4. Add production mode with reduced logging
+5. Consider HTTPS support or document reverse proxy requirements

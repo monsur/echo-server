@@ -268,4 +268,110 @@ describe('Echo Server', () => {
                 });
         });
     });
+
+    describe('Input Validation', () => {
+        it('should reject status codes below 100', (done) => {
+            request(app)
+                .get('/99')
+                .expect(500)
+                .end((err, res) => {
+                    if (err) return done(err);
+                    expect(res.text).to.equal('Internal Server Error');
+                    done();
+                });
+        });
+
+        it('should reject status codes above 599', (done) => {
+            request(app)
+                .get('/600')
+                .expect(500)
+                .end((err, res) => {
+                    if (err) return done(err);
+                    expect(res.text).to.equal('Internal Server Error');
+                    done();
+                });
+        });
+
+        it('should accept valid status codes at lower boundary', (done) => {
+            // Use 101 instead of 100 since 100 Continue has special HTTP semantics
+            request(app)
+                .get('/101')
+                .expect(101, done);
+        });
+
+        it('should accept valid status codes at upper boundary', (done) => {
+            request(app)
+                .get('/599')
+                .expect(599, done);
+        });
+
+        it('should reject reasonPhrase with CRLF characters', (done) => {
+            const maliciousPhrase = encodeURIComponent('OK\r\nX-Injected: malicious');
+
+            request(app)
+                .get(`/200?reasonPhrase=${maliciousPhrase}`)
+                .expect(500)
+                .end((err, res) => {
+                    if (err) return done(err);
+                    expect(res.text).to.equal('Internal Server Error');
+                    done();
+                });
+        });
+
+        it('should reject reasonPhrase exceeding 100 characters', (done) => {
+            const longPhrase = 'A'.repeat(101);
+
+            request(app)
+                .get(`/200?reasonPhrase=${longPhrase}`)
+                .expect(500)
+                .end((err, res) => {
+                    if (err) return done(err);
+                    expect(res.text).to.equal('Internal Server Error');
+                    done();
+                });
+        });
+
+        it('should accept reasonPhrase at exactly 100 characters', (done) => {
+            const exactPhrase = 'A'.repeat(100);
+
+            request(app)
+                .get(`/200?reasonPhrase=${exactPhrase}`)
+                .expect(200, done);
+        });
+
+        it('should accept body within size limit', (done) => {
+            const body = 'x'.repeat(1000);
+
+            request(app)
+                .get(`/200?body=${body}`)
+                .expect(200)
+                .end((err, res) => {
+                    if (err) return done(err);
+                    expect(res.text).to.include(body);
+                    done();
+                });
+        });
+
+        it('should reject nested reasonPhrase parameters', (done) => {
+            request(app)
+                .get('/200?reasonPhrase.nested=value')
+                .expect(500)
+                .end((err, res) => {
+                    if (err) return done(err);
+                    expect(res.text).to.equal('Internal Server Error');
+                    done();
+                });
+        });
+
+        it('should reject nested body parameters', (done) => {
+            request(app)
+                .get('/200?body.nested=value')
+                .expect(500)
+                .end((err, res) => {
+                    if (err) return done(err);
+                    expect(res.text).to.equal('Internal Server Error');
+                    done();
+                });
+        });
+    });
 });

@@ -62,6 +62,11 @@ const argv = yargs(hideBin(process.argv))
 
 const app = express();
 
+// Security: Limit request body size to prevent DoS attacks
+// Setting limit for JSON and URL-encoded bodies to 1MB
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ limit: '1mb', extended: true }));
+
 function getOptions(req) {
     const u = url.parse(req.url);
     const qs = new URLSearchParams(u.query);
@@ -122,7 +127,17 @@ function getOptions(req) {
 
     const getStatus = (u) => {
         const status = parseInt(u.pathname.substring(1), 10);
-        return isNaN(status) ? 200 : status;
+
+        // Security: Validate status code is in valid HTTP range
+        if (isNaN(status)) {
+            return 200;
+        }
+
+        if (status < 100 || status > 599) {
+            throw new Error(`Invalid status code: ${status}. Must be between 100 and 599`);
+        }
+
+        return status;
     };
 
     // A safer way to handle conditions
@@ -184,6 +199,32 @@ function getOptions(req) {
             }
             if (!isValidHeaderValue(value)) {
                 throw new Error(`Invalid header value for ${headerName}`);
+            }
+        }
+
+        // Security: Validate reasonPhrase
+        if (keys[0] === 'reasonPhrase') {
+            if (keys.length !== 1) {
+                throw new Error('Invalid reasonPhrase specification');
+            }
+            // Prevent CRLF injection in reason phrases
+            if (!isValidHeaderValue(value)) {
+                throw new Error('Invalid reasonPhrase: contains CRLF characters');
+            }
+            // Limit reasonPhrase length
+            if (value.length > 100) {
+                throw new Error('Invalid reasonPhrase: exceeds maximum length of 100 characters');
+            }
+        }
+
+        // Security: Validate body size
+        if (keys[0] === 'body') {
+            if (keys.length !== 1) {
+                throw new Error('Invalid body specification');
+            }
+            // Limit body size to 1MB
+            if (value.length > 1048576) {
+                throw new Error('Invalid body: exceeds maximum size of 1MB');
             }
         }
 
