@@ -75,4 +75,114 @@ describe('Echo Server', () => {
                 });
         });
     });
+
+    describe('JSON Security Validations', () => {
+        it('should reject JSON exceeding size limit', (done) => {
+            // Create a JSON string larger than 10KB
+            const largeObject = { data: 'x'.repeat(11000) };
+            const json = encodeURIComponent(JSON.stringify(largeObject));
+
+            request(app)
+                .get(`/200?json=${json}`)
+                .expect(500)
+                .end((err, res) => {
+                    if (err) return done(err);
+                    expect(res.text).to.equal('Internal Server Error');
+                    done();
+                });
+        });
+
+        it('should reject JSON with __proto__ key', (done) => {
+            const maliciousJson = encodeURIComponent('{"__proto__":{"isAdmin":true}}');
+
+            request(app)
+                .get(`/200?json=${maliciousJson}`)
+                .expect(500)
+                .end((err, res) => {
+                    if (err) return done(err);
+                    expect(res.text).to.equal('Internal Server Error');
+                    done();
+                });
+        });
+
+        it('should reject JSON with constructor key', (done) => {
+            const maliciousJson = encodeURIComponent('{"constructor":{"prototype":{"isAdmin":true}}}');
+
+            request(app)
+                .get(`/200?json=${maliciousJson}`)
+                .expect(500)
+                .end((err, res) => {
+                    if (err) return done(err);
+                    expect(res.text).to.equal('Internal Server Error');
+                    done();
+                });
+        });
+
+        it('should reject JSON with prototype key', (done) => {
+            const maliciousJson = encodeURIComponent('{"prototype":{"isAdmin":true}}');
+
+            request(app)
+                .get(`/200?json=${maliciousJson}`)
+                .expect(500)
+                .end((err, res) => {
+                    if (err) return done(err);
+                    expect(res.text).to.equal('Internal Server Error');
+                    done();
+                });
+        });
+
+        it('should reject deeply nested JSON (DoS prevention)', (done) => {
+            // Create an object nested more than 10 levels deep
+            let deepObject = { value: 'test' };
+            for (let i = 0; i < 15; i++) {
+                deepObject = { nested: deepObject };
+            }
+            const json = encodeURIComponent(JSON.stringify(deepObject));
+
+            request(app)
+                .get(`/200?json=${json}`)
+                .expect(500)
+                .end((err, res) => {
+                    if (err) return done(err);
+                    expect(res.text).to.equal('Internal Server Error');
+                    done();
+                });
+        });
+
+        it('should reject malformed JSON', (done) => {
+            const invalidJson = encodeURIComponent('{invalid json}');
+
+            request(app)
+                .get(`/200?json=${invalidJson}`)
+                .expect(500)
+                .end((err, res) => {
+                    if (err) return done(err);
+                    expect(res.text).to.equal('Internal Server Error');
+                    done();
+                });
+        });
+
+        it('should accept JSON at exactly the depth limit', (done) => {
+            // Create an object nested exactly 10 levels deep
+            let deepObject = { value: 'test' };
+            for (let i = 0; i < 9; i++) {
+                deepObject = { nested: deepObject };
+            }
+            const json = encodeURIComponent(JSON.stringify(deepObject));
+
+            request(app)
+                .get(`/200?json=${json}`)
+                .expect(200, done);
+        });
+
+        it('should accept JSON at exactly the size limit', (done) => {
+            // Create a JSON string just under 10KB
+            const largeObject = { data: 'x'.repeat(9900) };
+            const json = encodeURIComponent(JSON.stringify(largeObject));
+
+            request(app)
+                .get(`/200?json=${json}`)
+                .expect(200, done);
+        });
+    });
 });
