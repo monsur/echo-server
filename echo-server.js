@@ -147,9 +147,46 @@ function getOptions(req) {
         }));
     }
 
+    // Security: Validate header names to prevent header injection
+    const isValidHeaderName = (name) => {
+        // RFC 7230: header field names must be tokens (alphanumeric, -, and some special chars)
+        // Prevent newlines, colons in names, and other control characters
+        const headerNameRegex = /^[a-zA-Z0-9!#$%&'*+\-.^_`|~]+$/;
+        return headerNameRegex.test(name) && !name.includes('\r') && !name.includes('\n');
+    };
+
+    const isValidHeaderValue = (value) => {
+        // Prevent header injection via CRLF characters
+        return typeof value === 'string' && !value.includes('\r') && !value.includes('\n');
+    };
+
+    // Whitelist of allowed root-level option keys
+    const ALLOWED_ROOT_KEYS = ['headers', 'statusCode', 'reasonPhrase', 'body', 'condition'];
+
     for (const [name, value] of qs.entries()) {
         if (name === 'json') continue;
+
         const keys = name.split('.');
+
+        // Security: Only allow whitelisted root keys
+        if (!ALLOWED_ROOT_KEYS.includes(keys[0])) {
+            throw new Error(`Invalid option key: ${keys[0]}`);
+        }
+
+        // Security: Validate header names and values
+        if (keys[0] === 'headers') {
+            if (keys.length !== 2) {
+                throw new Error('Invalid header specification');
+            }
+            const headerName = keys[1];
+            if (!isValidHeaderName(headerName)) {
+                throw new Error(`Invalid header name: ${headerName}`);
+            }
+            if (!isValidHeaderValue(value)) {
+                throw new Error(`Invalid header value for ${headerName}`);
+            }
+        }
+
         let current = options;
         keys.forEach((key, index) => {
             if (index === keys.length - 1) {

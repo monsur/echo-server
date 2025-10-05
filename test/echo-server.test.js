@@ -185,4 +185,87 @@ describe('Echo Server', () => {
                 .expect(200, done);
         });
     });
+
+    describe('Header Injection Security', () => {
+        it('should reject header names with CRLF characters', (done) => {
+            const maliciousHeader = encodeURIComponent('X-Test\r\nX-Injected: malicious');
+
+            request(app)
+                .get(`/200?headers.${maliciousHeader}=value`)
+                .expect(500)
+                .end((err, res) => {
+                    if (err) return done(err);
+                    expect(res.text).to.equal('Internal Server Error');
+                    done();
+                });
+        });
+
+        it('should reject header values with CRLF characters', (done) => {
+            const maliciousValue = encodeURIComponent('value\r\nX-Injected: malicious');
+
+            request(app)
+                .get(`/200?headers.X-Custom=${maliciousValue}`)
+                .expect(500)
+                .end((err, res) => {
+                    if (err) return done(err);
+                    expect(res.text).to.equal('Internal Server Error');
+                    done();
+                });
+        });
+
+        it('should reject invalid header names', (done) => {
+            const invalidHeader = encodeURIComponent('X-Test<script>');
+
+            request(app)
+                .get(`/200?headers.${invalidHeader}=value`)
+                .expect(500)
+                .end((err, res) => {
+                    if (err) return done(err);
+                    expect(res.text).to.equal('Internal Server Error');
+                    done();
+                });
+        });
+
+        it('should reject non-whitelisted root keys', (done) => {
+            request(app)
+                .get('/200?malicious.key=value')
+                .expect(500)
+                .end((err, res) => {
+                    if (err) return done(err);
+                    expect(res.text).to.equal('Internal Server Error');
+                    done();
+                });
+        });
+
+        it('should accept valid header names with allowed special characters', (done) => {
+            request(app)
+                .get('/200?headers.X-Custom-Header-123=ValidValue')
+                .expect(200)
+                .expect('X-Custom-Header-123', 'ValidValue')
+                .end(done);
+        });
+
+        it('should reject deeply nested header parameters', (done) => {
+            request(app)
+                .get('/200?headers.X-Custom.nested=value')
+                .expect(500)
+                .end((err, res) => {
+                    if (err) return done(err);
+                    expect(res.text).to.equal('Internal Server Error');
+                    done();
+                });
+        });
+
+        it('should accept whitelisted root keys', (done) => {
+            request(app)
+                .get('/200?body=CustomBody&reasonPhrase=CustomPhrase')
+                .expect(200)
+                .end((err, res) => {
+                    if (err) return done(err);
+                    expect(res.text).to.include('CustomBody');
+                    expect(res.res.statusMessage).to.equal('CustomPhrase');
+                    done();
+                });
+        });
+    });
 });
