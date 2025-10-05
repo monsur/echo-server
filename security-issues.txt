@@ -1,0 +1,49 @@
+SECURITY ISSUES - Echo Server
+=============================
+
+## Critical Issues
+
+1. JSON Parsing without Validation (echo-server.js:71)
+   - Directly parses user-supplied JSON from query parameters without validation or error handling
+   - Could lead to DoS via deeply nested objects or prototype pollution attacks
+   - Recommendation: Add JSON schema validation and size limits
+
+2. Arbitrary Header Injection (echo-server.js:101-113)
+   - Query parameters can inject arbitrary headers through the dot-notation parsing
+   - No validation on header names or values
+   - Could enable HTTP response splitting or header injection attacks
+   - Recommendation: Whitelist allowed headers or validate/sanitize header names
+
+3. No Rate Limiting
+   - No protection against DoS attacks
+   - Recommendation: Implement rate limiting middleware (e.g., express-rate-limit)
+
+## Moderate Issues
+
+4. Missing Input Validation
+   - Status codes are parsed but not validated for reasonable ranges (echo-server.js:75)
+   - No size limits on request bodies
+   - Recommendation: Validate status codes (100-599), add body size limits
+
+5. Information Disclosure (echo-server.js:183)
+   - Logs entire response body to console, which may contain sensitive data
+   - Error messages could leak internal details (echo-server.js:186-187)
+   - Recommendation: Sanitize logs, use generic error messages
+
+6. No Security Headers
+   - Missing security headers (X-Frame-Options, X-Content-Type-Options, etc.)
+   - Recommendation: Add helmet middleware
+
+## Low-Risk
+
+7. Deprecated url.parse() (echo-server.js:66)
+   - Uses deprecated Node.js API
+   - Recommendation: Use URL constructor instead
+
+8. No HTTPS Support
+   - Only runs on HTTP
+   - For production, add HTTPS support
+
+## Dependency Security
+
+Dependencies are clean (0 vulnerabilities per npm audit).
