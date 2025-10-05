@@ -46,14 +46,16 @@ Last Updated: 2025-10-05
    - Recommendation: Add helmet middleware
    - Note: This is a deployment/infrastructure concern
 
-## Low-Risk - NOT ADDRESSED
+## Low-Risk - FIXED ✓
 
-7. Deprecated url.parse() (echo-server.js:71)
-   - Uses deprecated Node.js API
-   - Recommendation: Use URL constructor instead
-   - Note: Low priority, API still works
+7. Deprecated url.parse() (echo-server.js:70-73)
+   STATUS: FIXED
+   - Replaced deprecated url.parse() with modern URL API
+   - Now uses native URL constructor and searchParams
+   - 2 unit tests added to verify URL parsing works correctly
 
 8. No HTTPS Support
+   STATUS: NOT ADDRESSED
    - Only runs on HTTP
    - Recommendation: Add HTTPS support for production
    - Note: Often handled at reverse proxy/load balancer level
@@ -64,11 +66,11 @@ Dependencies are clean (0 vulnerabilities per npm audit).
 
 ## Test Coverage Summary
 
-Total Tests: 31
+Total Tests: 33
 - Basic functionality: 6 tests
 - JSON security: 8 tests
 - Header injection security: 7 tests
-- Input validation: 10 tests
+- Input validation: 12 tests
 
 All tests passing ✓
 
@@ -78,11 +80,11 @@ All tests passing ✓
 2. Header injection prevention (name/value validation, whitelisting)
 3. Input validation (status codes, body size, reasonPhrase)
 4. Request body size limits (1MB via Express middleware)
+5. Replaced deprecated url.parse() with modern URL API
 
 ## Remaining Recommendations
 
 1. Consider adding helmet middleware for security headers
 2. Implement rate limiting for production deployments
-3. Replace deprecated url.parse() with URL constructor
-4. Add production mode with reduced logging
-5. Consider HTTPS support or document reverse proxy requirements
+3. Add production mode with reduced logging
+4. Consider HTTPS support or document reverse proxy requirements

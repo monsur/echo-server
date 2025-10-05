@@ -6,7 +6,6 @@
 const express = require('express');
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
-const url = require('url');
 
 const HTTP_STATUS_MESSAGES = {
     100: 'Continue',
@@ -68,8 +67,10 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ limit: '1mb', extended: true }));
 
 function getOptions(req) {
-    const u = url.parse(req.url);
-    const qs = new URLSearchParams(u.query);
+    // Use modern URL API instead of deprecated url.parse()
+    const fullUrl = `http://localhost${req.url}`;
+    const u = new URL(fullUrl);
+    const qs = u.searchParams;
     let options = {};
 
     if (qs.has('json')) {

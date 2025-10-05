@@ -373,5 +373,29 @@ describe('Echo Server', () => {
                     done();
                 });
         });
+
+        it('should handle URLs with special characters', (done) => {
+            // Test that modern URL API handles encoded characters properly
+            request(app)
+                .get('/200?reasonPhrase=Hello%20World')
+                .expect(200)
+                .end((err, res) => {
+                    if (err) return done(err);
+                    expect(res.res.statusMessage).to.equal('Hello World');
+                    done();
+                });
+        });
+
+        it('should handle URLs with multiple query parameters', (done) => {
+            request(app)
+                .get('/200?reasonPhrase=OK&headers.X-Test=value')
+                .expect(200)
+                .expect('X-Test', 'value')
+                .end((err, res) => {
+                    if (err) return done(err);
+                    expect(res.res.statusMessage).to.equal('OK');
+                    done();
+                });
+        });
     });
 });
