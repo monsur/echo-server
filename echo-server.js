@@ -68,7 +68,56 @@ function getOptions(req) {
     let options = {};
 
     if (qs.has('json')) {
-        options = JSON.parse(qs.get('json'));
+        const jsonString = qs.get('json');
+
+        // Security: Validate JSON string size to prevent DoS
+        const MAX_JSON_SIZE = 10000; // 10KB limit
+        if (jsonString.length > MAX_JSON_SIZE) {
+            throw new Error('JSON parameter exceeds maximum allowed size');
+        }
+
+        try {
+            options = JSON.parse(jsonString);
+
+            // Security: Prevent prototype pollution by checking for dangerous keys
+            const hasDangerousKeys = (obj) => {
+                if (!obj || typeof obj !== 'object') return false;
+                const dangerousKeys = ['__proto__', 'constructor', 'prototype'];
+                for (const key of Object.keys(obj)) {
+                    if (dangerousKeys.includes(key)) {
+                        return true;
+                    }
+                    if (typeof obj[key] === 'object' && obj[key] !== null) {
+                        if (hasDangerousKeys(obj[key])) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            };
+
+            if (hasDangerousKeys(options)) {
+                throw new Error('Invalid JSON: prototype pollution attempt detected');
+            }
+
+            // Security: Validate JSON depth to prevent DoS via deeply nested objects
+            const validateDepth = (obj, depth = 0, maxDepth = 10) => {
+                if (depth > maxDepth) {
+                    throw new Error('JSON nesting depth exceeds maximum allowed');
+                }
+                if (obj && typeof obj === 'object') {
+                    for (const key in obj) {
+                        if (obj.hasOwnProperty(key)) {
+                            validateDepth(obj[key], depth + 1, maxDepth);
+                        }
+                    }
+                }
+            };
+            validateDepth(options);
+
+        } catch (error) {
+            throw new Error(`Invalid JSON parameter: ${error.message}`);
+        }
     }
 
     const getStatus = (u) => {
